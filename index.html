@@ -18,73 +18,29 @@
     .container {
       max-width: 720px;
       margin: 0 auto;
-      padding: 16px;
+      padding: 20px 16px;
     }
-    .user-card {
-      background: #1a1a1a;
-      border-radius: 12px;
-      padding: 16px;
-      margin-bottom: 16px;
-      display: flex;
-      align-items: center;
-      gap: 14px;
+    .hero {
+      text-align: center;
+      margin-bottom: 24px;
     }
-    .user-card img {
-      width: 64px;
-      height: 64px;
+    .hero img {
+      width: 96px;
+      height: 96px;
       border-radius: 50%;
-      background: #333;
-      flex-shrink: 0;
+      background: #222;
+      margin-bottom: 16px;
     }
-    .user-info { flex: 1; min-width: 0; }
-    .user-name {
-      font-size: 18px;
+    .hero .greeting {
+      font-size: 22px;
       font-weight: 600;
-      margin: 0 0 4px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
+      margin: 0 0 6px;
     }
-    .user-meta {
-      font-size: 13px;
-      color: #888;
-      line-height: 1.5;
-    }
-    .user-meta span { color: #4a90e2; }
-    .status {
-      padding: 12px 16px;
-      border-radius: 8px;
-      margin-bottom: 16px;
-      font-size: 14px;
-    }
-    .status.loading { background: #1f2a3a; color: #6ba3d6; }
-    .status.error { background: #3a1f1f; color: #d66b6b; }
-    .status.success { background: #1f3a2a; color: #6bd68f; }
-
-    details {
-      background: #1a1a1a;
-      border-radius: 12px;
-      margin-bottom: 16px;
-      overflow: hidden;
-    }
-    details summary {
-      padding: 14px 16px;
-      cursor: pointer;
-      font-size: 14px;
-      font-weight: 500;
+    .hero .name {
+      font-size: 18px;
       color: #4a90e2;
-      user-select: none;
+      margin: 0;
     }
-    details[open] summary { border-bottom: 1px solid #2a2a2a; }
-    .params {
-      padding: 12px 16px;
-      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-      font-size: 12px;
-      line-height: 1.7;
-    }
-    .params .key { color: #888; }
-    .params .val { color: #fff; word-break: break-all; }
-
     .video-wrap {
       background: #1a1a1a;
       border-radius: 12px;
@@ -101,24 +57,11 @@
 </head>
 <body>
   <div class="container">
-
-    <div id="status" class="status loading">Загружаем данные пользователя…</div>
-
-    <div id="userCard" class="user-card" style="display:none">
+    <div class="hero">
       <img id="userPhoto" alt="">
-      <div class="user-info">
-        <div id="userName" class="user-name">—</div>
-        <div class="user-meta">
-          ID: <span id="userId">—</span><br>
-          Платформа: <span id="userPlatform">—</span>
-        </div>
-      </div>
+      <div class="greeting">Добро пожаловать!</div>
+      <div id="userName" class="name">…</div>
     </div>
-
-    <details>
-      <summary>Все launch params (из URL)</summary>
-      <div id="launchParams" class="params"></div>
-    </details>
 
     <div class="video-wrap">
       <iframe
@@ -128,48 +71,17 @@
         webkitallowfullscreen
         mozallowfullscreen></iframe>
     </div>
-
   </div>
 
   <script>
-    const statusEl = document.getElementById('status');
-
-    // 1) Парсим launch params из URL — это то, что ВК подставляет при открытии
-    const params = Object.fromEntries(new URLSearchParams(window.location.search));
-    const launchParamsEl = document.getElementById('launchParams');
-    if (Object.keys(params).length === 0) {
-      launchParamsEl.innerHTML = '<span class="key">пусто (видимо, ты открыл страницу не из ВК)</span>';
-    } else {
-      launchParamsEl.innerHTML = Object.entries(params)
-        .map(([k, v]) => `<div><span class="key">${k}:</span> <span class="val">${v}</span></div>`)
-        .join('');
-    }
-
-    // Сразу показываем то что есть в URL (vk_user_id, vk_platform)
-    if (params.vk_user_id) document.getElementById('userId').textContent = params.vk_user_id;
-    if (params.vk_platform) document.getElementById('userPlatform').textContent = params.vk_platform;
-
-    // 2) Инициализация VK Bridge — обязательно
     vkBridge.send('VKWebAppInit')
-      .then(() => {
-        // 3) Запрашиваем инфу о пользователе (без запроса прав, работает сразу)
-        return vkBridge.send('VKWebAppGetUserInfo');
-      })
+      .then(() => vkBridge.send('VKWebAppGetUserInfo'))
       .then(user => {
         document.getElementById('userPhoto').src = user.photo_100 || '';
         document.getElementById('userName').textContent =
           `${user.first_name} ${user.last_name}`;
-        document.getElementById('userId').textContent = user.id;
-        document.getElementById('userCard').style.display = 'flex';
-
-        statusEl.className = 'status success';
-        statusEl.textContent = '✓ Пользователь определён через VK Bridge';
       })
-      .catch(err => {
-        statusEl.className = 'status error';
-        statusEl.textContent = '✕ Ошибка: ' + (err?.error_data?.error_reason || JSON.stringify(err));
-        console.error('VK Bridge error:', err);
-      });
+      .catch(err => console.error('VK Bridge error:', err));
   </script>
 </body>
 </html>
